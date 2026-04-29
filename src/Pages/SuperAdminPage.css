@@ -372,13 +372,93 @@
 }
 
 .sm-tenant-created-box {
-  border: 1px solid rgba(255, 174, 56, 0.35);
-  background: rgba(255, 174, 56, 0.1);
+  border: 1px solid rgba(255, 174, 56, 0.45);
+  background: rgba(255, 174, 56, 0.08);
   color: var(--sm-text);
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 14px;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
   font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sm-tenant-created-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sm-tenant-created-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sm-tenant-created-label {
+  color: var(--sm-muted);
+  min-width: 130px;
+}
+
+.sm-tenant-created-pw {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.sm-pw-code {
+  font-family: monospace;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 2px 8px;
+  border-radius: 6px;
+  flex: 1;
+  word-break: break-all;
+}
+
+.sm-copy-btn {
+  background: var(--sm-accent);
+  color: #0d1219;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.sm-copy-btn:hover {
+  opacity: 0.85;
+}
+
+.sm-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--sm-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.sm-icon-btn:hover {
+  color: var(--sm-text);
+}
+
+.sm-tenant-created-warn {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(255, 174, 56, 0.85);
+  font-style: italic;
 }
 
 .sm-tenant-edit-box {

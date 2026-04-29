@@ -51,6 +51,7 @@ export default function SuperAdminPage({ token, onLogout }) {
   const [creatingTenant, setCreatingTenant] = useState(false);
   const [editingTenantId, setEditingTenantId] = useState("");
   const [lastCreatedCredentials, setLastCreatedCredentials] = useState(null);
+  const [copiedPw, setCopiedPw] = useState(false);
 
   const [newTenantForm, setNewTenantForm] = useState({
     businessName: "",
@@ -861,10 +862,48 @@ export default function SuperAdminPage({ token, onLogout }) {
 
                 {lastCreatedCredentials?.temporaryPassword ? (
                   <div className="sm-tenant-created-box">
-                    <strong>Personal criado:</strong>{" "}
-                    {lastCreatedCredentials.tenantName} |{" "}
-                    {lastCreatedCredentials.email} | senha temporaria:{" "}
-                    <code>{lastCreatedCredentials.temporaryPassword}</code>
+                    <div className="sm-tenant-created-header">
+                      <span>✅ Personal criado com sucesso!</span>
+                      <button
+                        className="sm-icon-btn"
+                        onClick={() => setLastCreatedCredentials(null)}
+                        title="Fechar"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="sm-tenant-created-row">
+                      <span className="sm-tenant-created-label">Nome:</span>
+                      <span>{lastCreatedCredentials.tenantName}</span>
+                    </div>
+                    <div className="sm-tenant-created-row">
+                      <span className="sm-tenant-created-label">Email:</span>
+                      <span>{lastCreatedCredentials.email}</span>
+                    </div>
+                    <div className="sm-tenant-created-row sm-tenant-created-pw">
+                      <span className="sm-tenant-created-label">
+                        Senha tempor&aacute;ria:
+                      </span>
+                      <code className="sm-pw-code">
+                        {lastCreatedCredentials.temporaryPassword}
+                      </code>
+                      <button
+                        className="sm-copy-btn"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            lastCreatedCredentials.temporaryPassword,
+                          );
+                          setCopiedPw(true);
+                          setTimeout(() => setCopiedPw(false), 2000);
+                        }}
+                      >
+                        {copiedPw ? "Copiado!" : "Copiar senha"}
+                      </button>
+                    </div>
+                    <p className="sm-tenant-created-warn">
+                      ⚠️ Guarde essa senha agora — ela n&atilde;o ser&aacute;
+                      exibida novamente.
+                    </p>
                   </div>
                 ) : null}
 
