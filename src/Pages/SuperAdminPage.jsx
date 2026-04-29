@@ -47,6 +47,27 @@ export default function SuperAdminPage({ token, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingTenantId, setUpdatingTenantId] = useState(null);
+  const [deletingTenantId, setDeletingTenantId] = useState(null);
+  const [creatingTenant, setCreatingTenant] = useState(false);
+  const [editingTenantId, setEditingTenantId] = useState("");
+  const [lastCreatedCredentials, setLastCreatedCredentials] = useState(null);
+
+  const [newTenantForm, setNewTenantForm] = useState({
+    businessName: "",
+    email: "",
+    phone: "",
+    subdomain: "",
+    status: "ACTIVE",
+    defaultPlan: "FREE",
+    password: "",
+  });
+
+  const [editTenantForm, setEditTenantForm] = useState({
+    businessName: "",
+    email: "",
+    phone: "",
+    subdomain: "",
+  });
 
   // Tenant filters & pagination
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -186,6 +207,9 @@ export default function SuperAdminPage({ token, onLogout }) {
         String(t.user?.email || "")
           .toLowerCase()
           .includes(term) ||
+        String(t.subdomain || "")
+          .toLowerCase()
+          .includes(term) ||
         String(plan).toLowerCase().includes(term)
       );
     });
@@ -293,6 +317,111 @@ export default function SuperAdminPage({ token, onLogout }) {
       setError(err.message || "Falha ao atualizar status do personal");
     } finally {
       setUpdatingTenantId(null);
+    }
+  };
+
+  const handleCreateTenant = async (e) => {
+    e.preventDefault();
+    setError("");
+    setCreatingTenant(true);
+    setLastCreatedCredentials(null);
+
+    try {
+      const payload = {
+        businessName: newTenantForm.businessName.trim(),
+        email: newTenantForm.email.trim().toLowerCase(),
+        phone: newTenantForm.phone.trim() || null,
+        subdomain: newTenantForm.subdomain.trim().toLowerCase(),
+        status: newTenantForm.status,
+        defaultPlan: newTenantForm.defaultPlan,
+        password: newTenantForm.password || undefined,
+      };
+
+      const created = await fetchJson("/super-admin/tenants", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setLastCreatedCredentials({
+        tenantName: created?.tenant?.businessName || payload.businessName,
+        email: created?.tenant?.user?.email || payload.email,
+        temporaryPassword: created?.temporaryPassword || null,
+      });
+
+      setNewTenantForm({
+        businessName: "",
+        email: "",
+        phone: "",
+        subdomain: "",
+        status: "ACTIVE",
+        defaultPlan: "FREE",
+        password: "",
+      });
+
+      await loadDashboard();
+      setActiveMenu("tenants");
+    } catch (err) {
+      setError(err.message || "Falha ao criar personal");
+    } finally {
+      setCreatingTenant(false);
+    }
+  };
+
+  const startEditTenant = (tenant) => {
+    setEditingTenantId(tenant.id);
+    setEditTenantForm({
+      businessName: tenant.businessName || "",
+      email: tenant.user?.email || "",
+      phone: tenant.phone || "",
+      subdomain: tenant.subdomain || "",
+    });
+  };
+
+  const handleUpdateTenant = async (tenantId) => {
+    setError("");
+    setUpdatingTenantId(tenantId);
+
+    try {
+      await fetchJson(`/super-admin/tenants/${tenantId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          businessName: editTenantForm.businessName.trim(),
+          email: editTenantForm.email.trim().toLowerCase(),
+          phone: editTenantForm.phone.trim() || null,
+          subdomain: editTenantForm.subdomain.trim().toLowerCase(),
+        }),
+      });
+
+      setEditingTenantId("");
+      await loadDashboard();
+      setActiveMenu("tenants");
+    } catch (err) {
+      setError(err.message || "Falha ao atualizar personal");
+    } finally {
+      setUpdatingTenantId(null);
+    }
+  };
+
+  const handleDeleteTenant = async (tenantId, businessName) => {
+    const ok = window.confirm(
+      `Deseja desativar/excluir o personal ${businessName}?`,
+    );
+    if (!ok) return;
+
+    setError("");
+    setDeletingTenantId(tenantId);
+
+    try {
+      await fetchJson(`/super-admin/tenants/${tenantId}`, {
+        method: "DELETE",
+      });
+
+      await loadDashboard();
+      setActiveMenu("tenants");
+    } catch (err) {
+      setError(err.message || "Falha ao excluir personal");
+    } finally {
+      setDeletingTenantId(null);
     }
   };
 
@@ -621,6 +750,124 @@ export default function SuperAdminPage({ token, onLogout }) {
                   </div>
                 </div>
 
+                <form className="sm-tenant-form" onSubmit={handleCreateTenant}>
+                  <div className="sm-tenant-form-header">
+                    <h4 className="sm-section-title">Criar novo personal</h4>
+                    <span className="sm-inline-muted">
+                      Cadastro completo com subdominio
+                    </span>
+                  </div>
+
+                  <div className="sm-tenant-form-grid">
+                    <input
+                      className="sm-input"
+                      placeholder="Nome do negocio"
+                      value={newTenantForm.businessName}
+                      onChange={(e) =>
+                        setNewTenantForm((prev) => ({
+                          ...prev,
+                          businessName: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                    <input
+                      className="sm-input"
+                      type="email"
+                      placeholder="email@personal.com"
+                      value={newTenantForm.email}
+                      onChange={(e) =>
+                        setNewTenantForm((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                    <input
+                      className="sm-input"
+                      placeholder="Telefone"
+                      value={newTenantForm.phone}
+                      onChange={(e) =>
+                        setNewTenantForm((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
+                      }
+                    />
+                    <input
+                      className="sm-input"
+                      placeholder="subdominio (ex: thiagoiazzetti)"
+                      value={newTenantForm.subdomain}
+                      onChange={(e) =>
+                        setNewTenantForm((prev) => ({
+                          ...prev,
+                          subdomain: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                    <select
+                      className="sm-input"
+                      value={newTenantForm.status}
+                      onChange={(e) =>
+                        setNewTenantForm((prev) => ({
+                          ...prev,
+                          status: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="ACTIVE">Ativo</option>
+                      <option value="INACTIVE">Inativo</option>
+                      <option value="SUSPENDED">Suspenso</option>
+                    </select>
+                    <select
+                      className="sm-input"
+                      value={newTenantForm.defaultPlan}
+                      onChange={(e) =>
+                        setNewTenantForm((prev) => ({
+                          ...prev,
+                          defaultPlan: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="FREE">FREE</option>
+                      <option value="PRO">PRO</option>
+                      <option value="PREMIUM">PREMIUM</option>
+                    </select>
+                    <input
+                      className="sm-input"
+                      placeholder="Senha inicial (opcional)"
+                      value={newTenantForm.password}
+                      onChange={(e) =>
+                        setNewTenantForm((prev) => ({
+                          ...prev,
+                          password: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="sm-tenant-form-actions">
+                    <button
+                      type="submit"
+                      className="sm-primary-btn"
+                      disabled={creatingTenant}
+                    >
+                      {creatingTenant ? "Criando..." : "Criar personal"}
+                    </button>
+                  </div>
+                </form>
+
+                {lastCreatedCredentials?.temporaryPassword ? (
+                  <div className="sm-tenant-created-box">
+                    <strong>Personal criado:</strong>{" "}
+                    {lastCreatedCredentials.tenantName} |{" "}
+                    {lastCreatedCredentials.email} | senha temporaria:{" "}
+                    <code>{lastCreatedCredentials.temporaryPassword}</code>
+                  </div>
+                ) : null}
+
                 {loading ? (
                   <div className="sm-skeleton">Carregando tenants...</div>
                 ) : (
@@ -631,6 +878,8 @@ export default function SuperAdminPage({ token, onLogout }) {
                           <tr className="text-xs uppercase tracking-[0.08em] text-[var(--sm-muted)]">
                             <th className="px-3 py-2">Personal</th>
                             <th className="px-3 py-2">Email</th>
+                            <th className="px-3 py-2">Telefone</th>
+                            <th className="px-3 py-2">Subdominio</th>
                             <th className="px-3 py-2">Plano</th>
                             <th className="px-3 py-2">Alunos</th>
                             <th className="px-3 py-2">Status</th>
@@ -648,6 +897,12 @@ export default function SuperAdminPage({ token, onLogout }) {
                                 </td>
                                 <td className="px-3 py-3 text-[var(--sm-muted)]">
                                   {tenant.user?.email || "-"}
+                                </td>
+                                <td className="px-3 py-3 text-[var(--sm-muted)]">
+                                  {tenant.phone || "-"}
+                                </td>
+                                <td className="px-3 py-3 text-[var(--sm-muted)]">
+                                  {tenant.subdomain || "-"}
                                 </td>
                                 <td className="px-3 py-3">
                                   {sub?.subscriptionPlan?.code ? (
@@ -671,23 +926,47 @@ export default function SuperAdminPage({ token, onLogout }) {
                                   </span>
                                 </td>
                                 <td className="px-3 py-3">
-                                  <button
-                                    type="button"
-                                    disabled={updatingTenantId === tenant.id}
-                                    onClick={() =>
-                                      handleToggleTenantStatus(
-                                        tenant.id,
-                                        tenant.status,
-                                      )
-                                    }
-                                    className={`sm-tenant-btn ${isActive ? "sm-tenant-btn-danger" : "sm-tenant-btn-success"}`}
-                                  >
-                                    {updatingTenantId === tenant.id
-                                      ? "..."
-                                      : isActive
-                                        ? "Desligar"
-                                        : "Reativar"}
-                                  </button>
+                                  <div className="sm-tenant-actions-wrap">
+                                    <button
+                                      type="button"
+                                      disabled={updatingTenantId === tenant.id}
+                                      onClick={() =>
+                                        handleToggleTenantStatus(
+                                          tenant.id,
+                                          tenant.status,
+                                        )
+                                      }
+                                      className={`sm-tenant-btn ${isActive ? "sm-tenant-btn-danger" : "sm-tenant-btn-success"}`}
+                                    >
+                                      {updatingTenantId === tenant.id
+                                        ? "..."
+                                        : isActive
+                                          ? "Desligar"
+                                          : "Reativar"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="sm-tenant-btn sm-tenant-btn-neutral"
+                                      onClick={() => startEditTenant(tenant)}
+                                    >
+                                      Editar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="sm-tenant-btn sm-tenant-btn-danger"
+                                      disabled={deletingTenantId === tenant.id}
+                                      onClick={() =>
+                                        handleDeleteTenant(
+                                          tenant.id,
+                                          tenant.businessName,
+                                        )
+                                      }
+                                    >
+                                      {deletingTenantId === tenant.id
+                                        ? "..."
+                                        : "Excluir"}
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -695,7 +974,7 @@ export default function SuperAdminPage({ token, onLogout }) {
                           {pagedTenants.length === 0 && (
                             <tr>
                               <td
-                                colSpan={6}
+                                colSpan={8}
                                 className="px-3 py-6 text-center text-[var(--sm-muted)]"
                               >
                                 Nenhum personal encontrado com esses filtros
@@ -741,6 +1020,80 @@ export default function SuperAdminPage({ token, onLogout }) {
                         </button>
                       </div>
                     </div>
+
+                    {editingTenantId ? (
+                      <div className="sm-tenant-edit-box">
+                        <div className="sm-tenant-form-header">
+                          <h4 className="sm-section-title">Editar personal</h4>
+                          <button
+                            type="button"
+                            className="sm-tenant-btn sm-tenant-btn-neutral"
+                            onClick={() => setEditingTenantId("")}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                        <div className="sm-tenant-form-grid">
+                          <input
+                            className="sm-input"
+                            placeholder="Nome do negocio"
+                            value={editTenantForm.businessName}
+                            onChange={(e) =>
+                              setEditTenantForm((prev) => ({
+                                ...prev,
+                                businessName: e.target.value,
+                              }))
+                            }
+                          />
+                          <input
+                            className="sm-input"
+                            placeholder="Email"
+                            type="email"
+                            value={editTenantForm.email}
+                            onChange={(e) =>
+                              setEditTenantForm((prev) => ({
+                                ...prev,
+                                email: e.target.value,
+                              }))
+                            }
+                          />
+                          <input
+                            className="sm-input"
+                            placeholder="Telefone"
+                            value={editTenantForm.phone}
+                            onChange={(e) =>
+                              setEditTenantForm((prev) => ({
+                                ...prev,
+                                phone: e.target.value,
+                              }))
+                            }
+                          />
+                          <input
+                            className="sm-input"
+                            placeholder="Subdominio"
+                            value={editTenantForm.subdomain}
+                            onChange={(e) =>
+                              setEditTenantForm((prev) => ({
+                                ...prev,
+                                subdomain: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="sm-tenant-form-actions">
+                          <button
+                            type="button"
+                            className="sm-primary-btn"
+                            disabled={updatingTenantId === editingTenantId}
+                            onClick={() => handleUpdateTenant(editingTenantId)}
+                          >
+                            {updatingTenantId === editingTenantId
+                              ? "Salvando..."
+                              : "Salvar alteracoes"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </>
                 )}
               </section>
