@@ -405,7 +405,7 @@ export default function SuperAdminPage({ token, onLogout }) {
 
   const handleDeleteTenant = async (tenantId, businessName) => {
     const ok = window.confirm(
-      `Deseja desativar/excluir o personal ${businessName}?`,
+      `Tem certeza que deseja EXCLUIR permanentemente o personal "${businessName}"?\n\nEssa ação remove todos os dados (alunos, treinos, pagamentos) e não pode ser desfeita.`,
     );
     if (!ok) return;
 
@@ -413,7 +413,7 @@ export default function SuperAdminPage({ token, onLogout }) {
     setDeletingTenantId(tenantId);
 
     try {
-      await fetchJson(`/super-admin/tenants/${tenantId}`, {
+      await fetchJson(`/super-admin/tenants/${tenantId}/hard`, {
         method: "DELETE",
       });
 
