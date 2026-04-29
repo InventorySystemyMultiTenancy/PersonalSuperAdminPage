@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family:
+    "Manrope",
+    "Sora",
+    "Plus Jakarta Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+}
